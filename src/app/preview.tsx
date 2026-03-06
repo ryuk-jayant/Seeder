@@ -1,42 +1,55 @@
-import { View, Image, StyleSheet, TouchableOpacity, Text } from "react-native";
-import * as MediaLibrary from "expo-media-library";
+import { View, Image, TouchableOpacity, Text, StyleSheet } from "react-native";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 
-export default function PreviewScreen({ photoUri, onDelete, onSave }) {
-  const savePhoto = async () => {
-    const { status } = await MediaLibrary.requestPermissionsAsync(false);
+export default function PreviewScreen({ photo, onDelete, onConfirm }) {
 
-    if (status === "granted") {
-      await MediaLibrary.saveToLibraryAsync(photoUri);
-      onSave();
-    }
+  const saveLocal = async () => {
+    const name = `photo_${Date.now()}.jpg`;
+    const path = FileSystem.documentDirectory + name;
+
+    await FileSystem.copyAsync({
+      from: photo,
+      to: path,
+    });
+
+    onConfirm(path);
+  };
+
+  const sharePhoto = async () => {
+    await Sharing.shareAsync(photo);
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={{ uri: photoUri }} style={styles.image} />
+    <View style={{ flex: 1 }}>
+      <Image source={{ uri: photo }} style={{ flex: 1 }} />
 
       <View style={styles.controls}>
+
         <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
           <Text style={styles.text}>Delete</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveBtn} onPress={savePhoto}>
+        <TouchableOpacity style={styles.saveBtn} onPress={saveLocal}>
           <Text style={styles.text}>Save</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.shareBtn} onPress={sharePhoto}>
+          <Text style={styles.text}>Share</Text>
+        </TouchableOpacity>
+
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  image: { flex: 1 },
-
   controls: {
+    position: "absolute",
+    bottom: 40,
+    width: "100%",
     flexDirection: "row",
     justifyContent: "space-around",
-    padding: 20,
-    backgroundColor: "black",
   },
 
   deleteBtn: {
@@ -51,8 +64,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
 
+  shareBtn: {
+    backgroundColor: "blue",
+    padding: 15,
+    borderRadius: 10,
+  },
+
   text: {
     color: "white",
-    fontSize: 18,
+    fontSize: 16,
   },
 });
